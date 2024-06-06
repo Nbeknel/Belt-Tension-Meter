@@ -38,14 +38,16 @@ module peg(x=0, y=0, z=0, rot = 0) {
 }
 
 //middle cylinder bridge
-translate([0.01 * (100 - peg_overlap) * peg_diameter, 0, base_height + layer_height])
-hull() {
-    rotate([0, 0, 180])
-    cylinder(belt_width, d = peg_diameter, $fn=peg_resolution);
+module bridge() {
+    translate([0.01 * (100 - peg_overlap) * peg_diameter, 0, base_height + layer_height])
+    hull() {
+        rotate([0, 0, 180])
+        cylinder(belt_width, d = peg_diameter, $fn=peg_resolution);
     
-    translate([0.01 * (150 + peg_overlap) * peg_diameter, 0, 0])
-    rotate([0, 0, 180])
-    cylinder(belt_width, d = peg_diameter, $fn=peg_resolution);
+        translate([0.01 * (150 + peg_overlap) * peg_diameter, 0, 0])
+        rotate([0, 0, 180])
+        cylinder(belt_width, d = peg_diameter, $fn=peg_resolution);
+    }
 }
 
 //spring guide
@@ -93,6 +95,9 @@ module belt_tension_meter(){
         
         // bottom cylinder
         peg(y = -0.5 * peg_distance);
+        
+        // bridge
+        bridge();
     }
 }
 
