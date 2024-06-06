@@ -51,22 +51,25 @@ module bridge() {
 }
 
 //spring guide
-a = 1.5 * amplitude;
-w = 0.5 * belt_width / tan(max_overhang_angle);
-
-translate([2.5 * peg_diameter, 0, base_height + layer_height])
-rotate([0, 90, 0])
-linear_extrude(_vernier_length + 2 * rule_margin + nozzle_diameter)
-polygon([[0, a], [-0.5 * belt_width, a+w], [-belt_width, a], [-belt_width, -a], [-0.5 * belt_width, -a - w], [0, -a]]);
+module slider(x, y, z, angle) {
+    a = y;
+    w = 0.5 * z / tan(angle);
+    rotate([0, 90, 0])
+    linear_extrude(x)
+    polygon([[0, a], [-0.5 * z, a+w], [-z, a], [-z, -a], [-0.5 * z, -a - w], [0, -a]]);
+}
 
 //vernier scale
-translate([2.5 * peg_diameter + rule_margin, a - 5, _height])
-for (i = [0 : 1 : 10]){
-    translate([i * _vernier_length / number_of_subdivisions, 0, 0])
-    cube([nozzle_diameter, 5, layer_height]);
+module vernier_scale() {
+    translate([2.5 * peg_diameter + rule_margin, 1.5 * amplitude - 5, _height])
+    for (i = [0 : 1 : 10]){
+        translate([i * _vernier_length / number_of_subdivisions, 0, 0])
+        cube([nozzle_diameter, 5, layer_height]);
+    }
 }
 
 //case
+/*
 translate([2.5 * peg_diameter - border_width - tolerance, 0, 0])
 difference() {
     translate([0, -a - tolerance - border_width, 0])
@@ -83,6 +86,49 @@ difference() {
         [-0.5 * belt_width, -a - w-tolerance],
         [layer_height, -a-tolerance]
     ]);
+}*/
+
+module chamfer_object(r, fn=4) {
+    translate([r, 0, r])
+    union() {
+        cylinder(r, r, 0, $fn=fn);
+        
+        translate([0, 0, -r])
+        cylinder(r, 0, r, $fn=fn);
+    }
+}
+
+module case_a(chamfer_radius) {
+    x = _vernier_length + 2 * (rule_margin + border_width + spring_connection_length - chamfer_radius) + nozzle_diameter + pulse_length * number_of_pulses + tolerance;
+    y = 2 * (tolerance + border_width - chamfer_radius) + 3 * amplitude;
+    z = _height - 2 * chamfer_radius;
+    hull() {
+        for (i = [0 : 1 : 1],
+            j = [0 : 1 : 1],
+            k = [0 : 1 : 1]) {
+                translate([i * x, (j - 0.5) * y, k * z])
+                chamfer_object(chamfer_radius, 20);
+            }
+    }
+}
+
+module case_w_guide() {
+    difference() {
+        children();
+        
+        translate([border_width, 0, base_height + layer_height - tolerance])
+        slider(_vernier_length + 2 * (rule_margin + spring_connection_length) + nozzle_diameter + pulse_length * number_of_pulses, //x
+            1.5 * amplitude + tolerance, //y
+            belt_width + 2 * tolerance, //z
+            max_overhang_angle //angle
+        );
+    }
+}
+
+module case(){
+    case_w_guide(){
+        case_a(2);
+    }
 }
 
 module belt_tension_meter(){
@@ -98,6 +144,18 @@ module belt_tension_meter(){
         
         // bridge
         bridge();
+        
+        translate([2.5 * peg_diameter, 0, base_height + layer_height])
+        slider(_vernier_length + 2 * rule_margin + nozzle_diameter, //x
+            1.5 * amplitude, //y
+            belt_width, //z
+            max_overhang_angle //angle
+        );
+        
+        vernier_scale();
+        
+        translate([2.5 * peg_diameter - border_width - tolerance, 0, 0])
+        case();
     }
 }
 
